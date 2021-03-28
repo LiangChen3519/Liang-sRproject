@@ -1,0 +1,540 @@
+---
+title: "Extrem events vs. forest GPP"
+author: "liang chen"
+date: "26.2.2021"
+output:
+  rmdformats::readthedown:
+    use_bookdown: true
+    lightbox: true
+    highlight: tango
+---
+
+```{r,warning=FALSE}
+library(tidyverse)
+library(RSQLite)
+library(ggmap)
+library(lubridate)
+library(SPEI)
+library(optimx)
+library(lme4)
+library(parameters)
+library(sjPlot)
+library(sjmisc)
+library(reticulate)
+library(stargazer)
+library(leaflet)
+library(dlnm)
+library(fitdistrplus)
+# give the path of python to R
+use_python("C:\\Users\\liangch\\Anaconda3\\python.exe")
+```
+```{r setup, include=FALSE,echo=FALSE}
+knitr::opts_chunk$set(python.reticulate = F)
+```
+
+### Link to database
+
+```{r}
+
+forest <- read.table("../ForestSite.txt",header = T,sep = ",")
+
+conn <- dbConnect(SQLite(),"../Flux40SiteDataset.db")
+```
+
+In order to, reduce the cpu pressure, we prefure slicing at database by sql first then loading to R...
+
+### Tmax and Tmin for SPEI drought index
+
+```{r,message=FALSE,warning=FALSE}
+
+site_list <- forest$SITE_ID
+Tem <- NULL
+for (s in site_list) {
+  res <-
+    dbGetQuery(
+      conn,
+      'SELECT TIMESTAMP_END, TA_F, site FROM Flux44SiteHalfHourly WHERE site = ?',
+      params = s
+    )
+  res <- data.frame(res)
+  res$TIMESTAMP_END <- ymd_hm(res$TIMESTAMP_END)  # to date
+  res$year <- year(res$TIMESTAMP_END)
+  res$month <- month(res$TIMESTAMP_END)
+  res$day <- day(res$TIMESTAMP_END)
+  
+  nd <- res %>% group_by(site, year, month, day) %>%
+    summarise(Tmax = max(TA_F), T_min = min(TA_F))
+  Tem <- rbind(Tem, nd)
+  messages <- cat("now is working on", s)
+  print(messages)
+}
+
+```
+### Prepare for SPEI drught index
+
+**SPEI** is calculated from climatic water balance (precipitation minus potential evapotranspiration) at *month* scale. Thus we should get the water balance before hand. It also should be noticed that operation for precipitation is summation.
+
+In addition,  PET for each month at each site is calculate from **thornthwaite** function. one of parameters is latitude information.
+
+```{r LinkToDB, echo=T,warning=F}
+
+ClimaticData <-
+  dbGetQuery(conn,
+             'SELECT TIMESTAMP,site,TA_F, P_F, Year,Month, Day FROM Flux44SiteDaily')
+ClimaticData <- data.frame(ClimaticData)
+# re-order the levels
+ClimaticData$Month <-
+  factor(ClimaticData$Month, levels =  c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12))
+# Precipitation
+Preci <- ClimaticData[, c("Year", "Month", "Day", "P_F", "site")]
+
+# monthly precipitation
+monthly_preci <- Preci %>%
+  group_by(site, Year, Month) %>%
+  summarise(Pre = sum(P_F))
+# Other climatic variables
+monthly_Tem <- ClimaticData[, c("Year", "Month", "TA_F", "site")] %>%
+  group_by(site, Year, Month) %>%
+  summarise(Ta_m = mean(TA_F))
+
+# merge latitude and monthly temerature and precipitation
+MonthlyData <- merge(monthly_preci, monthly_Tem,
+                     by = c("site", "Year", "Month")) %>%
+  merge(forest[, c("SITE_ID", "LOCATION_LAT")],
+        by.y = "SITE_ID",
+        by.x =  "site")
+str(MonthlyData)
+```
+
+#### Calculations of PET 
+```{r PET, message=F,warning=F}
+
+site_list  <- unique(MonthlyData$site)
+PET <- NULL
+sites <- NULL
+for (s in site_list) {
+  siteData <- subset(MonthlyData, site == s)
+  years <- unique(siteData$Year)
+  
+  for (y in years) {
+    subd <- subset(siteData, Year == y)
+    sites <- append(sites, s)
+    PE <- thornthwaite(ts(
+      subd$Ta_m,
+      start = c(subd$Year[1], 1),
+      frequency = 12
+    ),
+    subd$LOCATION_LAT[1])
+    PET <- rbind(PET, PE)
+  }
+}
+```
+
+#### Calculations of SPEI
+```{r,fig.align='center'}
+MonthlyData$PET  <- PET
+MonthlyData$Bal <- MonthlyData$Pre-MonthlyData$PET
+MonthlyData <- na.omit(MonthlyData)
+# 1 year resolution
+spei1 <- spei(MonthlyData$Bal,1)
+plot(spei1)
+```
+
+#### SPEI site-wise distribution
+```{r,fig.height=20,fig.width=20,fig.cap="Site-wise SPEI distribution",out.height=25,out.width=25, warning=FALSE}
+MonthlyData$spei <- spei1$fitted
+MonthlyData %>% group_by(site,Year) %>%
+summarise(spei_m = mean(spei)) %>%
+ggplot(aes(factor(Year),spei_m))+geom_point(col="red")+
+    facet_wrap(site~.,ncol = 5,scale="free")+
+    theme(axis.text.x = element_text(angle = 90))
+```
+#### transform to yearly
+```{r, warning=FALSE}
+yearlyPreci <- MonthlyData %>%
+  group_by(site, Year) %>%
+  summarise(Pre_total = sum(Pre))
+
+drought_yearly <- MonthlyData %>% group_by(site, Year) %>%
+  summarise_all(mean)
+
+drought_yearly$sumPreci <- yearlyPreci$Pre_total
+```
+
+### Frost
+the frost period is varied from year to year, due to we adjusted the method.
+The current method is based on Carbon flux phenology (GPP phenology). Basic description for this method as follow:
+
+- the first time in a year when GPP = 10% GPPmax, the day we defined as the start of growing season.
+
+- the second time in a year when GPP = 10% GPPmax, the day we defined as the end of growing season.
+
+This part was done using python, code as follow:
+
+```python
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import sqlite3
+from statsmodels.tsa.holtwinters import ExponentialSmoothing, SimpleExpSmoothing, Holt
+
+conn1 = sqlite3.connect('../Flux40SiteDataset.db')
+
+md = pd.read_sql('select * from Flux44SiteDaily', conn1)
+
+md = pd.DataFrame(md)
+md = md.loc[md['GPP_NT_VUT_REF']!= -9999.000000,] #-9999 means NA
+
+site_list = np.unique(md['site'].values)
+
+smoothedGPP = []
+
+for site in site_list:
+    sub = md[md["site"] == site]
+    years = np.unique(sub['Year'])
+    
+    for year in years:
+    #   
+        subb = sub[sub["Year"] == year]
+        
+    # 
+        fit1 = SimpleExpSmoothing(subb['GPP_NT_VUT_REF'].values).fit(smoothing_level=0.15, optimized=False)
+     
+        subb["smoothedGPP"] = fit1.fittedvalues
+    # 
+        smoothedGPP.append(subb)
+    print(f"now is {site}")
+  
+smoothedGPP = pd.concat(smoothedGPP)
+
+
+# calculation for SOG AND EOG
+phe_gpp = pd.DataFrame(columns=["site", "Year", "Month", "Day", "smoothedGPP", "GPP_f", "datetime"])
+# phe_nep = pd.DataFrame(columns=["year", "DOY"])
+for site in site_list:
+    sub = smoothedGPP[smoothedGPP["site"] == site]
+    years = np.unique(sub["Year"])
+    for year in years:
+        subb = sub[sub['Year'] == year]
+        #     phe_yearly = Phe_Hyy[Phe_Hyy['Year'] == year]
+        print(f'Now calculating the {year} at {site}')
+        for i in np.arange(len(subb)):
+
+            if subb['smoothedGPP'].values[i] >= 0.1 * max(subb['GPP_NT_VUT_REF'].values):
+                phe_gpp = phe_gpp.append({"site": site, "Year": year, "Month": subb["Month"].values[i],
+                                          "Day": subb["Day"].values[i],
+                                          "smoothedGPP": subb["smoothedGPP"].values[i],
+                                          "GPP_f": subb["GPP_NT_VUT_REF"].values[i],
+                                          "datetime": subb["TIMESTAMP"].values[i]}, ignore_index=True)
+```
+code shown above is for detecting SOG and EOG
+
+Here we send python variable to R interpreter.
+**py$** means we want a variable which in python environment.
+```{r}
+phe_gpp <- read.table("../phenology_new.txt", sep = ',', header = T)
+str(phe_gpp)
+```
+
+```{r}
+phe <- 
+phe_new <- merge(Tem, phe_gpp, by.x = c("site","year","month","day"),
+                                 by.y = c("site","Year","Month","Day"))
+```
+```{r}
+# fd means frost damages
+frostdamage <- phe_new %>% subset(T_min < 0)%>% 
+               group_by(site,year)%>%
+               summarise(fd = -min(T_min)) 
+head(frostdamage)
+```
+frost damages site-wise
+```{r fd,fig.height=20,fig.width=20,fig.cap="Site-wise SPEI distribution",out.height=25,out.width=25, warning=FALSE}
+ggplot(frostdamage,aes(factor(year), fd))+geom_point(col="red")+
+    facet_wrap(site~.,ncol = 5,scale="free")+
+    theme(axis.text.x = element_text(angle = 90))
+```
+### GPP capacity
+
+GPP capacity is simulated using [**Julia language**](https://julialang.org/) due to it's fast computing.
+code as below:
+
+```julia
+using Pipe: @pipe # pipeline
+using LinearAlgebra
+using DataFrames 
+using Statistics # basic statistic analysis
+using JuliaDB
+using Dates # lubridate similar module
+using Query # SQL
+using LsqFit # linear model
+using IterableTables # conver df to tables
+using ProgressBars # really bad prograss bar , do not use
+using CSV 
+using Gadfly 
+using SQLite
+
+mydb = SQLite.DB("Flux40SiteDataset.db")
+md = DBInterface.execute(mydb, "SELECT * FROM Flux44SiteHalfHourly") |>                 DataFrame
+
+#transform datetime
+function Int_2_datetime(x)
+          return Dates.DateTime(string(x),"yyyymmddHHMMSS")
+       end
+
+Datetime = map(Int_2_datetime, md.TIMESTAMP_END)
+md.TIMESTAMP_END = Datetime
+
+# filter by ppfd and Ustar
+md = md |> @filter(Dates.month(_.TIMESTAMP_END) >= 4 && 
+      Dates.month(_.TIMESTAMP_END) <= 10 && _.PPFD_IN>=4 && _.USTAR>=0.2) |> DataFrame 
+      
+# drop value = -9999.0     
+allowmissing!(md) 
+md .= ifelse.(md .== -9999.0, missing, md)
+dropmissing!(md)
+
+#################### main function #######################
+
+mydata4 = DataFrame(site = String[],datatime=Date[],Pmax=Float64[],
+        Alpha_slope = Float64[],Theta = Float64[],Rd = Float64[],
+        R2 = Float64[],GPPcap_2000=Float64[])
+
+sitelist = unique(md.site)
+
+for site in sitelist
+    subdata = md |> @filter(_.site == site) |> DataFrame 
+    dates = unique([(Date(y)) for y in subdata.TIMESTAMP_END])
+    println("now is site--->",site)
+    for i in 1:length(dates)  
+        d = Date(dates[i]) # go through all dates
+        # the windows length is 7 days, and moving step is 1 day
+        sdd = subdata |> @filter(_.TIMESTAMP_END >= d &&
+             _.TIMESTAMP_END <= d+Dates.Day(7-1))|> DataFrame                    
+        gpp = sdd[!,:GPP_NT_VUT_REF] # as a vector with float 64 type  
+        light = sdd[!,:PPFD_IN] # vector float 64 type   
+        LightCurve(X,p) = @.((p[1]*p[2]*light-
+            abs((p[2]*light+p[1])^2-4*p[2]*light*p[3]*p[1])^0.5)/2*p[3] + p[4])
+        p0 = [25, 0.001,0.5,2.0] # initial values for parameters as a list     
+        fit = curve_fit(LightCurve, light, gpp, p0)
+        param = fit.param # get the para list
+        yhat = LightCurve(light, fit.param) # fitted values
+        R2 = (cor(yhat,gpp))^2  # filter criterion R2 is straitforward 
+        # we set Julia day as the middle day of a window
+        kk =  (param[2]*2000+param[1])^2-4*param[2]*2000*param[3]*param[1]
+        if  kk <= 0
+            kk = abs(kk) # if kk < 0 , that means R2 is very very small...
+                         # so here it doesn't matter 
+        else
+            skip
+        end
+        
+        GPPcap_2000 = (param[1]*param[2]*2000-
+            (kk)^0.5)/2*param[3] + param[4]
+        #append!(GPPcap_2000,LightCurve(X1, fit.param))
+        push!(mydata4,(site,d+Dates.Day((7-1)/2),param[1],param[2],param[3],param[4],
+                R2,GPPcap_2000))
+    end
+    println("now the site is finished--->",site)
+end
+
+# insert to database
+# strang thing is that julia does not supprt inserting dataframe but table type!! so transform to table....
+
+new_data = table(mydata4)
+SQLite.load!(new_data,mydb,"GPPcap_2000")
+
+```
+for each year in each site, 95% quantile GPP we recognized as yearly GPP capacity.
+Strange thing again, the table inserted by Julia can't read by other language, here, for example, R
+```{r}
+# GPPcap <-
+#   dbGetQuery(conn, 'SELECT * FROM GPPcap_2000')
+# GPPcap <- data.frame(GPPcap)
+GPPcap <- read.table("../GPPcap_2000.txt",sep = ',',header = T)
+GPPcap_yearly <- na.omit(GPPcap) %>%
+  filter(R2 > 0.6 & GPPcap_2000 > 0) %>%
+  group_by(site, year = year(datatime)) %>%
+  summarise(Gpp_cap = quantile(GPPcap_2000, 0.95))
+```
+### Frost vs. GPPcap_2000
+```{r}
+yearly <- merge(GPPcap_yearly, frostdamage, by = c("site", "year"))
+yearly <- merge(
+  yearly,
+  drought_yearly,
+  by.x = c("site", "year"),
+  by.y = c("site", "Year")
+)
+
+yearly <-
+  subset(yearly, !(site %in% c("IT-Ro2", "US-GBT", "US-Me2", "US-UMd")))
+#
+yearly$fd_nor <- scale(yearly$fd, center = T)
+yearly$spei_nor <- scale(yearly$spei, center = T)
+yearly$Gpp_cap_nor <- scale(yearly$Gpp_cap, center = T)
+# # we exclude 4 sites, dut there are only 4 ~ 5 observations
+#
+fit1 <- lmerTest::lmer(
+  Gpp_cap_nor ~ fd_nor + spei_nor + (1|site ),
+  data = yearly,
+  REML = F,
+  control = lmerControl(optimizer = "optimx",
+                        optCtrl = list(method = "nlminb"))
+)
+
+parameters(fit1)
+```
+The above linear mixed model is modified, due to THE variance of random slop for  fd_nor(Normalized frost damage) tends to zero. Thus final model you saw only keeps one random slop and for spei_nor(Normalized SPEI index).
+```{r}
+summary(fit1)
+```
+
+```{r}
+randeffect  <- ranef(fit1)$site
+randeffect$site <- rownames(randeffect)
+head(randeffect)
+```
+```{r}
+# FIX Effect
+plot_model(fit1, show.values = TRUE, value.offset = .3,sort.est = TRUE)
+```
+```{r,fig.width=10}
+plot_model(fit1, type = "re",show.values = TRUE, 
+           value.offset = .3,sort.est = TRUE)
+```
+### random effect on geographic distribution
+```{r , echo=FALSE}
+ggmap::register_google(key = "AIzaSyCqfZYfJ1ZLoktU3BkYHidy4Qye2XRw7LA")
+randeffect <- merge(randeffect,forest,by.x = "site",by.y="SITE_ID")
+```
+Here I hide my private Google map API key... 🤫.
+```{r,fig.height=4,fig.width=10,out.height=14,out.width=12,fig.cap="distribution of the forest type of sites"}
+
+qmplot(LOCATION_LONG,LOCATION_LAT,
+       data = randeffect,zoom = 4,color = IGBP,size = I(4))+
+       scale_color_viridis_d(direction = -1)+
+       theme(legend.position = "bottom",legend.title = element_blank())
+      
+```
+The above figure is the distribution of the forest type of sites
+```{r,echo=FALSE,fig.height=4,fig.width=8,fig.cap="Random interception distribution"}
+
+# color
+pal <- colorNumeric(palette = "PRGn",
+                    domain = randeffect$`(Intercept)`)
+
+leaflet(randeffect) %>% addTiles() %>%
+  addCircleMarkers(
+    data = randeffect,
+    lng = ~ LOCATION_LONG,
+    lat = ~ LOCATION_LAT,
+    stroke = T,
+    radius = 6,
+    label = ~ site,
+    fill = T,
+    fillOpacity = 1,
+    popup = ~ site,
+    color = ~ pal(`(Intercept)`),
+     labelOptions = labelOptions(noHide = F,direction = 'auto')
+  ) %>%
+  addLegend(
+    "bottomright",
+    pal = pal,
+    values = ~ `(Intercept)`,
+    title = "Random intercept distribution",
+    opacity = 1
+  )
+```
+
+```{r,echo=FALSE,fig.height=4,fig.width=8,fig.cap="Random slope of SPEI distribution"}
+pal <- colorNumeric(palette = "PRGn",
+                    domain = randeffect$spei_nor)
+
+leaflet(randeffect) %>% addTiles() %>%
+  addCircleMarkers(
+    lng = ~ LOCATION_LONG,
+    lat = ~ LOCATION_LAT,
+    stroke = T,
+    radius = 6,
+    label = ~ paste(site,":","",round(spei_nor,3)),
+    fill = T,
+    fillOpacity = 1,
+     popup = ~ paste(site,":","",round(spei_nor,3)),
+    color = ~ pal(spei_nor),
+    labelOptions = labelOptions(noHide = F,direction = 'auto')
+  ) %>%
+  addLegend(
+    "bottomright",
+    pal = pal,
+    values = ~ spei_nor,
+    title = "Random spei slope distribution",
+    opacity = 1
+  )
+```
+### different species
+```{r}
+yearly <-
+  merge(yearly,
+        select(forest, SITE_ID, IGBP),
+        by.x = "site",
+        by.y = "SITE_ID")
+str(yearly)
+```
+```{r}
+ENF <- subset(yearly,IGBP == 'ENF')
+
+fit2 <- lmerTest::lmer(
+  Gpp_cap_nor ~ fd_nor + spei_nor +
+    (1 + spei_nor | site),
+  data = ENF,
+  control = lmerControl(optimizer = "optimx",
+                        optCtrl = list(method = "nlminb"))
+)
+
+parameters(fit2)
+```
+```{r}
+DBF <- subset(yearly,IGBP == 'DBF')
+
+fit3 <- lmerTest::lmer(
+  Gpp_cap_nor ~ fd_nor + spei_nor +
+    (1 + spei_nor | site),
+  data = DBF,
+  control = lmerControl(optimizer = "optimx",
+                        optCtrl = list(method = "nlminb")))
+parameters(fit3)
+```
+
+```{r}
+ENF_m <- ENF %>% dplyr::select(-site,-IGBP) %>% group_by(year) %>% summarise_all(mean)
+```
+```{r}
+descdist(ENF_m$Gpp_cap, discrete = FALSE, boot = 1000)
+```
+
+```{r}
+plot(ENF_m$fd,ENF_m$Gpp_cap)
+plot(ENF_m$spei,ENF_m$Gpp_cap)
+```
+```{r}
+basis.spei <-  crossbasis(ENF_m$spei,lag=5, 
+                          argvar=list(fun="lin"),
+                          arglag=list(fun="poly",degree=2))
+basis.GPP <- crossbasis(ENF_m$Gpp_cap, lag=5, argvar=list(fun="lin"),
+                      arglag=list(fun="poly",degree=2))
+```
+```{r}
+fitlag <- lm(Gpp_cap ~ basis.spei,data=ENF_m)
+```
+
+```{r}
+pred1.lag <- crosspred(basis.spei, fitlag, bylag=0.1, cumul=T,at = seq(-1,0,by=0.2))
+```
+```{r,fig.width=6,fig.height=6}
+plot(pred1.lag , "slices", var = -0.6, ci="bars", type="p", col=2, pch=19,
+ylab="GPP capacity", ci.level=0.95,cumul = T)
+
+```
+
+

@@ -1,0 +1,225 @@
+---
+title: "Spatial analysis  for carbon density of boreal forest in northern China"
+author: "Liang"
+date: "28 2 2021"
+output:
+  rmdformats::readthedown:
+    
+    use_bookdown: true
+    lightbox: true
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.align = 'center',warning = FALSE,message = FALSE)
+```
+
+# Load some packages
+
+```{r packages,warning=FALSE,message=FALSE}
+library(sp)
+library(sf)
+library(car)
+library(tidyverse)
+library(gstat)
+library(ranger)
+library(GSIF)
+library(caret)
+library(plotKML)
+library(raster)
+library(rgdal)
+library(automap)
+library(leaflet)
+library(kableExtra)
+library(mapview)
+library(doParallel)
+```
+
+# Raster boundary from a .shp file
+
+我们需要创建一个boundary的grid，用来规定插值的地理范围。原本我以为.shp文件边界文件就可以，但是R的插值函数不支持vector的数据类型，所以我们需要提前创建好raster的插值范围。还需要注意的是，这个范围一定要和.shp文件大小，形状一致。 
+```{r Boundary,warning=FALSE,fig.cap="Fig.1 Boundary of DaXingAnLing",fig.align='center'}
+dxal <- st_read("C:\\Users\\liangch\\Desktop\\Liu\\dxal\\dxal.shp")
+ggplot() + geom_sf(data = dxal)
+```
+
+```{r BoundaryGrid, fig.cap="Fig.2 Grid-transformed boundary of DaXinAnLing"}
+grid <- dxal %>%
+  st_make_grid(what = "polygons", n = c(22, 33)) %>% # grid of points
+  st_intersection(dxal)                             # only within the polygon
+
+ggplot() +
+  geom_sf(data = dxal) +
+  geom_sf(data = grid)
+```
+
+```{r Intereaction, fig.cap="Fig.3 Intereactive map. you could check all detailed information using Zoom_in, Zoom_out or even change map layer form different database."}
+mapview(grid,legend = FALSE)+
+  mapview(dxal,legend = FALSE)
+```
+The above figure is kinda of interactive map. you could check all detailed information using Zoom_in, Zoom_out or even change map layer form different database.
+
+# 空间建模前的准备工作
+## Carbon density in tree的正太检验
+### 1980S dataset
+
+```{r Data}
+md80s <- read.csv("C:\\Users\\liangch\\Desktop\\Liu\\780 field survey plots measured from 1985 to 1988.csv",sep=",")
+str(md80s)
+```
+
+我们尝试用BOX-COX的极大似然估计法来计算转换系数，结果如下所示：
+```{r boxcox}
+powerTransform(md80s$Carbon.density.in.trees..Mg.C..ha.)
+```
+然后我们创建新的一列，就叫TCD(Tree carbon density)。该列是依据上面的结果经过BOX-COX转换后得到的。
+```{r Fig4,fig.cap="Quantile-quantile plot for TCD of 1980S"}
+md80s$TCD <- bcPower(md80s$Carbon.density.in.trees..Mg.C..ha. , 0.4389385)
+qqnorm(md80s$TCD, pch = 1, frame = FALSE)
+qqline(md80s$TCD, col = "steelblue", lwd = 2)
+```
+### 2010S dataset
+```{r 2010s}
+md2010s <- read.csv("C:\\Users\\liangch\\Desktop\\Liu\\149 field survey plots measured from 2015 to 2018.csv",sep=",")
+# we drop a lot of strange columns here.
+md2010s <- md2010s[,1:35]
+str(md2010s)
+```
+```{r boxcox2}
+powerTransform(md2010s$Carbon.density.in.trees..Mg.C..ha.)
+```
+```{r Fig5, fig.cap="Quantile-quantile plot for TCD of 2010S"}
+md2010s$TCD <- bcPower(md2010s$Carbon.density.in.trees..Mg.C..ha. , 0.4110755)
+qqnorm(md2010s$TCD, pch = 1, frame = FALSE)
+qqline(md2010s$TCD, col = "steelblue", lwd = 2)
+```
+从 Fig.\@ref(fig:Fig4)和Fig.\@ref(fig:Fig5)我们可以看出，在BOX-COX转换后，数据很好的符合乐正态分布。接下去我们就可以利用这个数据进行空间interpolation。
+
+# 1980s构建 RF-Krigin model
+## 检查missing values 
+```{r missVar,fig.cap="Missing variable check"}
+naniar::gg_miss_var(md80s,show_pct = TRUE)
+```
+根据上图（Fig.\@ref(fig:missVar)）, 有关Disturb的变量将不纳入模型的计算。 
+
+下面的模型总是巡行不通畅，原因是dataframe中可能存在不是numerical的数据列
+```{r}
+list_TYPE <- sapply(md80s, class)
+which(!(list_TYPE %in% c("numeric","integer")))
+```
+结果显示，第8列*DH*不是numeric的类型，所以我们得转换一下。
+
+```{r}
+# define x and y
+md80s <- md80s %>% dplyr::select(-(34:35)) %>%
+  as.data.frame() 
+
+md80s$DH <- as.numeric(md80s$DH)
+md80s <- na.omit(md80s)
+x1980 <-  md80s[, c(5:26, 28:33)]
+# Transform to numeric again...
+y1980 <-  md80s$TCD
+```
+上面的代码出现了很奇怪的事情。。。不过最终解决了。原因还是不同系统语言的问题。
+```{r customizeRF}
+# 重新定义 CARET 中 rf 内的一些参数
+# 该次为 regression tree
+# customRF <-
+#   list(type = "Regression",
+#        library = "randomForest",
+#        loop = NULL)
+# customRF <- c(customRF, list(prob = NULL))
+# customRF$parameters <- data.frame(
+#   parameter = c("mtry", "ntree"),
+#   class = c("numeric", 'numeric'),
+#   label = c("mtry", "ntree")
+# )
+# customRF$grid <- function(x, y, len = NULL, search = "grid") {
+#   
+# }
+# customRF$fit <-
+#   function(x, y, param, wts, lev, last, classProbs, ...) {
+#     randomForest(x, y, mtry = param$mtry, ntree = param$ntree, ...)
+#   }
+# customRF$predict <-
+#   function(modelFit,
+#            newdata,
+#            preProc = NULL,
+#            submodels = NULL)
+#     predict(modelFit, newdata)
+
+# 开启并行
+# 并行发生严重冲突。。。。。
+mp <- makePSOCKcluster(5)
+registerDoParallel(mp)
+# 我们BOOT 抽样 和 grid search 组合方法，以RMSE为indicator来确定最参数,
+Control <- trainControl(
+  method = "boot",
+  number = 100,
+  p = 0.8,
+  search = "grid",
+  allowParallel = TRUE
+)
+
+rf_grid <- expand.grid(mtry = 1:28,
+                       splitrule = "variance",
+                       
+                       min.node.size = 5
+                       # num.trees = seq(500, 2500, by = 250)
+                       )# for regression))
+                       
+# 模型主体
+set.seed(20210301)
+                       
+rf_regression <- train(
+                         x = dplyr::select(x1980,-Shannon.Wiener.diversity.index.richness..H..,-SD),
+                         y = y1980,
+                         method = "ranger",
+                         #指定为 random forest
+                         # importance = TRUE,
+                         importance="permutation",
+                         # variable importance
+                         metric = "RMSE", # indicator
+                         # nodesize = 5,
+                         num.trees = 2000,
+                         # for regression
+                         # ntree = 1500,
+                         trControl = Control,
+                         tuneGrid = rf_grid,
+                         preProc = c('center', 'scale'))
+                       
+```
+```{r shutdownParallel}
+# quit parallel computation
+ on.exit(stopCluster(mp))
+```
+```{r modleInfor}
+rf_regression
+```
+更具误差，我们最终选出了最有模型，模型很慢，是因为每次*mtry* 取一个数值，都会进行100次boot抽样，然后计算100次平均结果。
+
+## 构建空间坐标系并尝试插值
+```{r coordinates}
+coordinates(md80s) = ~Longitude+Latitude
+# proj4string(md80s) <- CRS("+init=epsg:28992")
+# spplot(md80s,"lead",colorkey=TRUE)
+```
+### 计算残差并构建semi-variance模型
+```{r}
+md80s$residu <-  resid(rf_regression)
+mykr <- autoKrige(residu ~ 1, md80s,as(grid,"Spatial"))
+plot(mykr)
+```
+```{r}
+# png("VarImp.png",width = 18,height = 12,units = "cm",res = 300)
+plot(varImp(rf_regression,scale = T))
+# dev.off()
+```
+```{r}
+(cor(x1980$H,y1980))^2
+```
+
+
+
+
+
