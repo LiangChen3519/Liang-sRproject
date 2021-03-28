@@ -1,0 +1,66 @@
+---
+title: "Analysis of the research plan"
+author: 
+    - name: "Liang Chen"
+date: "28 3 2021"
+output:
+  rmdformats::readthedown:
+    use_bookdown: true
+    lightbox: true
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Q1: Based on the Introduction why do you think it is important to study the effects of warming, N deposition and O3 on Scots pine seedlings? 
+
+The **Introduction** part shows the significant impact of **warming**, **N deposition** and **O$_{3}$** on forest ecosystem separately. For example, **warming** and **N deposition**  may have positive effect on plant growth, whereas **O$_{3}$** may reduce plant growth. In the future, forest is exposed to those effects at same time, and mechanisms for forest against those effects are still unclear. It is therefor important to quantify the relationship between forest growth, forest BVOCs on multi-factors. One issue here is that, this part seems not highlight a key question-- "why Scots pine ?" So it could be better that expand some contents about the importance of **Scots pine** against the changing climate.
+
+# Q2: Based on the **Experimental plan**, can you state all the different experimental treatments (and combination of treatments) in the field set up?
+
+Based on the **Experimental plan**, there are three factors, and each factor has 2 levels, thus totally there are $2×2×2 = 8$  treatments
+
+
+# Q3: After reading the introduction section, can you suggest some environmental factors (biotic or abiotic) other than warming, N addition and O3 that may affect growth and/or BVOC emissions of Scots pine seedlings?
+
+For example, stomatal conductance($g_{s}$), leaf area index(LAI), $CO2_{2}$ concentration, solar radiation, vapor pressure deficit(VPD), soil properties,
+pests,diseases, extreme events.
+
+# Q4: Can you state the statistical hypotheses based on the **Aims and objectives** section? 
+
+- Hypothesis 1: Warming, high N addition, and O3 stress alone and in combination significantly affect both Scots pine growth and BVOC emissions.
+
+# Q5: Based on the given **Research plan**, do you think you can perform the experiment? 
+
+Not really, I doubt this experimental design.
+
+# Q6: How can you improve the **Research plan?**
+
+Yes, I would like to improve the plan as follows:
+
+1. It is better that add more contents about the importance of **Scots pine** against the changing climate.
+
+2. The experiment design seems can not guarantee the independence of treatment. For example, Nitrogen addition measures and none addition measures  are within an same subplot. In addition, It should be highlight that there is a buffer area between subplots. 
+
+Here is a improved experimental design:
+
+![Schematic improved](C:\Users\liangch\Work_space\Liang-sRproject\Schematic2.png)
+The main different is that, we spited a plot into 4 subplots, there are randomly distributed. buffer zones are also settled up among them. Thus in each subplot, there is only one treatment. It's good for the assumption that each treatment should be independent. 
+
+# Q7: Do you think **Experimental plan** is adequate to study the research questions?
+
+As I mentioned above, the experiemnt design should be improved.
+
+# Q8: Can you suggest another response variable (besides plant growth and BVOC emissions) that can be studied using the given **Experimental plan?**
+
+For example, stomatal conductance, photosynthesis, leaf chlorophyll content, leaf area index, root growth (lidar could do that), reflectance spectrum, root microbiome.
+
+# Q9: Based on the **Experimental plan**, what do you think is the unit of replication in the experiment?
+
+Here, based on the experimental design, the unit of the experiment is half of subplot.
+
+# Q10: Based on the Experimental plan, can you draw a schematic* of the field set up?
+
+![Schematic original](C:\Users\liangch\Work_space\Liang-sRproject\Schematic.png)
