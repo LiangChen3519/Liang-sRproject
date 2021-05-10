@@ -1,0 +1,31 @@
+---
+author: Liang Chen
+return-address: 
+  - Natura. 366
+  - 80100 Joensuu
+return-phone: +358 403242072
+return-email: liangch@uef.fi
+address:
+  - Faculty officers
+  - Faculty of Science and Forestry
+  - Joensuu/Kuopio
+  - Finland
+subject: Application for the early stage researcher (doctoral student) position in Faculty of Science and Forestry
+opening: Dear Sir or Madam,
+closing: Yours faithfully,
+signature: Liang Chen
+
+output: komaletter::komaletter
+---
+
+I am a doctoral student from Department of Environmental and Biological Sciences. Subjects of my study are focusing on effects of "CO~2~ fertilization” and extreme events on forest ecosystem productivities cross the northern hemisphere. During the first two years of study, I have strived to develop efficient and interactive approaches in all of my endeavors for processing big ecological datasets. The first two of my research manuscripts were greatly benifited from those approaches. In addition, my independent research abilities are also extended. With this letter, I would like to take this great opportunity to apply for the position of early stage researcher and to take my PhD career further. 
+
+During prior studies, I have developed my skills on analyzing big datasets, I have collected the global carbon flux dataset, and have built an auto batch processing pipeline using mix-coding (Julia, Python and R) algorithms for data wrangling. Based on these data I have developed two articles, of which the first one is waiting for final approval of the authors for submission. I have a first draft for the second manuscript and I have finished the data analysis. I also collaborated in two other published papers (doing data analysis) of which one could be included in my PhD. My reasearch fits well at the interface of the CLEHE and FOBI research communities at UEF.
+
+Last but not the least, I do realize I am really addicted to the outdoor activities in the nature. I enjoy the birds singing in spring, hiking in summer, harvest mushrooms in autumn, snow walking in winter. 
+
+In conclusion, studying in University of Eastern Finland, I am benefit greatly from my earlier research experience and resources provided by university in further building up my professional career. I hope I have shown that I am an ideal candidate for this position.
+
+Thank you for considering my application.
+
+

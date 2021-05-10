@@ -1,0 +1,81 @@
+---
+title: "Short-term impact of warming and N deposition on the photosynthesis rate of Scots pine"
+output: 
+     bookdown::pdf_document2:
+        latex_engine: xelatex
+        number_sections: true
+        toc: no
+bibliography: Reference.bib
+link-citations: yes
+linkcolor: blue 
+urlcolor: blue
+citecolor: blue
+csl: nature.csl
+fontsize: 12pt
+indent: true
+header-includes:
+    - \usepackage{indentfirst}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introduction
+
+
+High latitude forest plays a crucial role in weakening the changing climate by photosynthesis[@ciais2019five; @mcguire2009sensitivity]. Almost 32% of the global forest carbon is stored in this ecosystem despite its occupying merely 10% of the world's surface[@bradshaw2015global; @keenan2015dynamics]. Prior studies have shown that boreal forests have been considered as more sensitive to climate change compared to forests in other regions, especially in the context of global warming[@arora2016potential; @gauthier2015boreal].
+
+Warming is likely to accelerate the growth of forests by changing change in the timing and length of the growing season[@ruosteenoja2020thermal]. It has been reported that the growth of Finnish boreal tree species increased under the changing climate[@torssonen2015we]. In addition, the growth of forests is highly dependent on the photosynthesis rate of plants. Previous studies have shown that warming can have a significant effect on the photosynthetic capacity of boreal forest trees[@ensminger2008soil; @linkosalo2014fluorescence].
+
+Boreal forest Carbon (**C**) uptake is mainly limited by nutrient. Atmospheric nitrogen (**N**) deposition has been proposed as an important way to increase the availability of nutrients, namely nitrogen of forest[@levy2014microbial; @maaroufi2015anthropogenic]. N deposition has been found to enhance ecosystem carbon capture in boreal forest via enhancing soil carbon capture, enriching tree leaf N content and extending leaf areas[@maaroufi2015anthropogenic]. However, some studies raised the debate about the response of forest to N depositions. For example, Magill et al (2004)[@magill2004ecosystem] and Nadelhoffer et al (1999)[@nadelhoffer1999nitrogen] reported forest has no obvious response to the N deposition. In addition, in future climate scenarios, warming  may alters forest productivity and nutrient availability, then further changes forest structure and functions[@pussinen2002forest]. Thus studies on the mechanisms of response of boreal forest C uptake on N deposition and warming  are therefore needed.
+
+# Aims and objectives
+
+Aims of this study is to reveal how warming temperature (ambient temperature and 1 $^oC$ above ambient temperature), N deposition (0 g N, 0.3 g N, 0.6 g N and 1.2 g N) may impact on photosynthesis of scots pine (*Pinus sylvestris*) seedlings.
+
+# Hypothesis
+
+* Null hypothesis (*H0*)
+
+    + Warming temperature and N deposition have no impact on photosynthesis of scots pine seedlings.
+    
+* Alternative hypothesis (*H1*)
+
+    + Warming temperature and N deposition have significant impact on        photosynthesis of scots pine seedlings.
+
+# General experimental set-up
+
+## Experimental plant
+
+Scots pine (*Pinus sylvestris*) is a common tree species and it is widespread in boreal regions. In this experiment, a total of 192 1-year-old scots pine (Pinus sylvesteris) seedlings will be planted in plastic pots at green house Joensuu campus. 
+
+## Experimental set-up with treatments
+
+```{r Diagram, fig.align = 'center', out.width = "85%",fig.cap = "Schematic of experiment design"}
+knitr::include_graphics(here::here("DEE2021", "ExperimentDesign.png"))
+```
+
+This experimental set-up includes eight tables (Figure \@ref(fig:Diagram)), one table is a plot. Four tables will be move to a greenhouse where temperature is treated as ambient. Rest of tables will be moved to another greenhouse where temperature keeps 1 $^oC$ above ambient. Then each table will be divided into 4 areas which equal to subplots. In each area, scots pine seedlings will be randomly placed in to 3 rows, each row has 2 seedlings. 4 areas/subplots will be treated **CK** ( 0 g N), **N+ ** ( 0.3 g N addition), **N++** (0.6 g N addition) and **N+++** (1.2 g N addition). In each table, orders of control area and experimental area are also randomly placed. To sum up, treatments in this experiment include: 
+
+a) Ambient temperature + **CK**(0 g N)
+a) Ambient temperature + **N+**( 0.3 g N addition)
+a) Ambient temperature + **N++**( 0.6 g N addition)
+a) Ambient temperature + **N+++**( 1.2 g N addition)
+a) 1 $^oC$ above ambient + **CK**(0 g N)
+a) 1 $^oC$ above ambient + **N+**( 0.3 g N addition)
+a) 1 $^oC$ above ambient + **N++**( 0.6 g N addition)
+a) 1 $^oC$ above ambient + **N+++**( 1.2 g N addition)
+
+
+## Maintaining the experiment
+
+The treatments will be maintained for one growing season (2022), from the beginning of April to the end of October. In this experiment, air temperature is controlled by climate controller station ([ITU MULTI STATION 100, ITUMIC OY, Finland](https://itumic.fi/en/products/climate-controllers/)) in each green house. Nitrogen addition of **N+**( 0.3 g N addition), **N++**( 0.6 g N addition), **N+++**( 1.2 g N addition) and **CK**(0 g N) will be sprayed every beginning of a month by portable spraying equipment. Photosynthesis of scots pine seedlings will be measured at the end of a month using LI-6400XT Portable Photosynthesis System ([Lincoln, Nebraska, USA](https://www.licor.com/env/products/photosynthesis/LI-6400XT/)).
+
+Pilot study is not needed here since greenhouse and LI-6400XT have been installed. Additionally, many prior studies have reported similar experiment processes.
+
+# Statistical analyses
+
+First, the normality of the data must be tested. If the data are not normally distributed, the transformation of the data is performed. Then, linear mixed models (LMMs) will be performed to quantified the effects of warming and N depositions to photosynthesis of scots pine. Finally, marginal means of photosynthesis rate will be compared at different levels using Bonferroni method. All statistical analyses will be done using SPSS 27.0 (IBM, USA) at the significant level of 0.05.
+
+# References

@@ -1,0 +1,121 @@
+---
+name: Liang Chen
+position: "PhD student"
+address: "Department of Environmental and Biologycal Science,  Joensuu, UEF"
+phone: +040 3242072
+profilepic: cv1.jpeg
+www: liangchen3519.github.io
+email: "liangch@uef.fi"
+github: LiangChen3519
+date: "`r format(Sys.time(), '%B %Y')`"
+aboutme: "I am a PhD student from Department of Environmental and Biological Science, UEF. My study is focusing on illustrating the dynamics of forest productivities (e.g. GPP, NPP) and response of forest to chaning climate using FluxNET dataset, tree ring dataset and remotely sensed dataset."
+output: vitae::twentyseconds
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(vitae)
+```
+
+# Digital research ID
+
+ * **ORCID iD: 0000-0002-1811-5717**
+    * *https://orcid.org/0000-0002-1811-5717_*
+    
+ * **Web of Science ResearcherID: AAM-1075-2021**
+    * *https://publons.com/researcher/AAM-1075-2021/*
+    
+ * **ResearchGate**
+    * *https://www.researchgate.net/profile/Liang-Chen-119*
+
+# Education
+
+```{r}
+library(tibble)
+tribble(
+  ~ Degree, ~ Year, ~ Institution, ~ Where,
+  "Master of Forest Science", "2014-2017", "Zhejiang A&F University", "Hangzhou, China",
+  "Bachelor of Forestry ", "2010-2014", "Beihua University", "Jilin, China"
+  ) %>% 
+  detailed_entries(Degree, Year, Institution, Where)
+```
+
+# Landuage skills
+
+```{r}
+tribble(
+  ~ Type, ~ level,
+ "Chinese", "native",
+ "English", "B2",
+) %>% 
+  detailed_entries(level, Type)
+```
+
+# Current employment
+
+```{r}
+tribble(
+  ~ Year, ~ title, ~ employer, ~ place,
+  "2021-2021", "Early Stage Researcher", "University of Eastern Finland", "Joensuu",
+ # "2019.4-2020.12 ", "Early Stage Researcher", "UEF", "Joensuu",
+  ) %>% 
+  detailed_entries(what = title, when = Year, with = employer, where = place)
+```
+
+# Previous work experience
+
+```{r}
+tribble(
+  ~ Year, ~ title, ~ employer, ~ place,
+"2019-2020", "Early Stage Researcher", "University of Eastern Finland", "Joensuu, Finland",
+"2018-2019", "Spatial data engineer", "Forestry Bureau of Tonglu", "Hanghzou, China",
+"2017-2018", "Research assistant", "State Key Laboratory of Subtropical Silviculture, ZAFU", "Hangzhou, China"
+  ) %>% 
+  detailed_entries(what = title, when = Year, with = employer, where = place)
+```
+
+# Awards and honours
+```{r}
+tribble(
+  ~ Year, ~ name,
+ "2016-2017", "Third-Class Scholarship",
+ "2015-2016", "First-Class Scholarship ",
+ "2014-2015", "Third-Class Scholarship "
+) %>% 
+  detailed_entries(when = Year, what = name)
+```
+# Other merits
+
+```{r}
+tribble(
+  ~ Year, ~ thing,
+ "2020.5", "Online presentation in session BG3.15 EGU 2020",
+ "2019.8", "Teaching in Summer School in Biology: Effects of Climate Change on Northern Ecosystems",
+) %>% 
+  detailed_entries(when = Year, what = thing)
+```
+
+
+# Research output
+
+```{r}
+#library(dplyr)
+#bibliography_entries("publications.bib") 
+tribble(
+  ~ id, ~ title,
+  1, "Chen, L., Zhu, X., Oren, R., Pumpanen, J., Kasurinen, V.,
+Berninger, F., Eddy covariance data support a strong CO2 fertilization effect in forests of northern hemisphere. (Undergoing final approval from the co-authors before submission to PNAS, Submission on 10.5.2021)",
+  2, "Chen,  L.,  Mola,  B.,  Pumpanen,  J.,  Berninger,   F.,  Vulnerability of recovery of ecosystem exchange to extreme climatic events. (First draft is done)",
+  3, "Zhu, X., Chen, L., Pumpanen, J., Keinänen, M., Laudon, H., Ojala, A., Palviainen, M., Kiirikki, M., Neitola, K., Berninger, F., 2021. Assessment of a portable UV–Vis spectrophotometer’s performance for stream water DOC and Fe content monitoring in remote areas. Talanta 224, 121919. https://doi.org/10.1016/j.talanta.2020.121919",
+  4, "Zhu, X., Chen, L., Pumpanen, J., Keinänen, M., Laudon, H., Ojala, A., Palviainen, M., Kiirikki, M., Neitola, K., Berninger, F., 2021. Assessment of a portable UV–Vis spectrophotometer’s performance in remote areas: Stream water DOC, Fe content and spectral data. Data in Brief 35, 106747. https://doi.org/10.1016/j.dib.2021.106747",
+  5, "Chen, L., Liu, Y., Zhou, G., Mao, F., Du, H., Xu, X., Li, P., Li, X., 2019. Diurnal and seasonal variations in carbon fluxes in bamboo forests during the growing season in Zhejiang province, China. J. For. Res. 30, 657–668. https://doi.org/10.1007/s11676-017-0570-9",
+  6, "Li, X., Du, H., Mao, F., Zhou, G., Chen, L., Xing, L., Fan, W., Xu, X., Liu, Y., Cui, L., Li, Y., Zhu, D., Liu, T., 2018. Estimating bamboo forest aboveground biomass using EnKF-assimilated MODIS LAI spatiotemporal data and machine learning algorithms. Agricultural and Forest Meteorology 256–257, 445–457. https://doi.org/10.1016/j.agrformet.2018.04.002",
+  7, "Du, H., Mao, F., Li, X., Zhou, G., Xu, X., Han, N., Sun, S., Gao, G., Cui, L., Li, Y., Zhu, D., Liu, Y., Chen, L., Fan, W., Li, P., Shi, Y., Zhou, Y., 2018. Mapping Global Bamboo Forest Distribution Using Multisource Remote Sensing Data. IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing 11, 1458–1471. https://doi.org/10.1109/JSTARS.2018.2800127",
+  8, "Liu, Y., Zhou, G., Du, H., Berninger, F., Mao, F., Li, X., Chen, L., Cui, L., Li, Y., Zhu, D., Xu, L., 2018. Response of carbon uptake to abiotic and biotic drivers in an intensively managed Lei bamboo forest. Journal of Environmental Management 223, 713–722. https://doi.org/10.1016/j.jenvman.2018.06.046",
+  9, "Liang, C., GuoMo, Z., HuaQiang, D., YuLi, L., FangJie, M., XiaoJun, X., XueJian, L., Lu, C., YangGuang, L., Di, Z., 2018. Simulation of CO2 flux and controlling factors in moso bamboo forest using random forest algorithm. Scientia Silvae Sinicae 54, 1–12.",
+  10, "Xu, L., Shi, Y., Fang, H., Zhou, G., Xu, X., Zhou, Y., Tao, J., Ji, B., Xu, J., Li, C., Chen, L., 2018. Vegetation carbon stocks driven by canopy density and forest age in subtropical forest ecosystems. Science of The Total Environment 631–632, 619–626. https://doi.org/10.1016/j.scitotenv.2018.03.080",
+  11, "Xu, L., Shi, Y., Zhou, G., Xu, X., Liu, E., Zhou, Y., Zhang, F., Li, C., Fang, H., Chen, L., 2018. Structural development and carbon dynamics of Moso bamboo forests in Zhejiang Province, China. Forest Ecology and Management 409, 479–488. https://doi.org/10.1016/j.foreco.2017.11.057",
+  12, "Liu, Y., Zhou, G., Du, H., Berninger, F., Mao, F., Li, X., Chen, L., Cui, L., Li, Y., Zhu, D., 2018. Soil respiration of a Moso bamboo forest significantly affected by gross ecosystem productivity and leaf area index in an extreme drought event. PeerJ 6, e5747. https://doi.org/10.7717/peerj.5747") %>% 
+ brief_entries(what = title, when = id)
+```
+

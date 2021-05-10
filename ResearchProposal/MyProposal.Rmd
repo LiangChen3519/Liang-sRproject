@@ -1,0 +1,85 @@
+---
+title: "Does eddy covariance data support CO~2~ fertilization effect in forests of Northern Hemisphere?"
+author: "Liang Chen, Department of Environmental and Biological Sciences, liangch@uef.fi"
+output: 
+     bookdown::pdf_document2:
+        latex_engine: xelatex
+        number_sections: true
+        toc: no
+bibliography: reference.bib
+link-citations: yes
+linkcolor: blue 
+urlcolor: blue
+citecolor: blue
+csl: pnas.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Background
+
+Forests play a crucial role in weakening the changing climate through 
+photosynthesis[@ciais2019five; @mcguire2009sensitivity]. About 1/3 of the anthropogenic CO~2~ emissions are sequestered in forest ecosystems[@stocker2014climate]. It has been argued that elevated atmospheric CO~2~ will increase forest productivity, this phenomenon known as the "CO~2~ fertilization effect". However, the debate about the existence and importance of CO~2~ fertilization has been ongoing[@stinziano2019modelled]. Some scientists argue that nutrient and sink limitations limit the responses of ecosystem photosynthesis to increases in CO~2~ concentrations[@korner2006plant]. Reasons leading to this lay in the nature of the available data, which is often inadequate in terms of time scale, sampling, and spatial extend[@tei2019strong; @girardin2016no]. Additionally, prior studies reported CO~2~ fertilization to be either underestimated or overestimated by Earth System Models[@de2016satellite; @sun2014impact]. Thus, a combination of long-term and large spatial datasets is important to improve understanding and the modeling of carbon-climate feedbacks.
+
+
+# Aims of the study
+
+My PhD project aims at using large scale monitoring data from Fluxnet (HTTPS://fluxnet.fluxdata.org) and satellite data from the Moderate Resolution Imaging Spectroradiometer (MODIS) products to quantify the effects of increasing CO~2~ on carbon fixation in northern hemisphere forests. Specifically, I want :
+(a) to accurately quantify the magnitude of CO~2~ fertilization in the northern hemisphere; (b) to reveal the response of forest carbon cycle to extreme events (e.g., drought) in the northern hemisphere and (c) to understand the effect of changes in the length of the growing season for the carbon cycle. 
+
+# Present state of my research
+
+The present state of the work is that I have finished the writing and analysis of the first paper of the thesis. It is undergoing final approval from the co-authors before submission to PNAS. The analysis of the second paper is finished, and I am in the writing process. All data for the third paper is collected. I hope to start the data analysis in September / October 2021. 
+
+**Paper 1) :** The first article cooperated with Xudan Zhu, Ram Oren,Jukka Pumpanen,Ville Kasurinen and Frank Berninger, is entitled *Eddy covariance data support a strong CO~2~ fertilization effect in forests of northern hemisphere*. It uses a statistical approach to analyze trends in the gross primary production of 40 long term measurement sites. It exploits that many environmental responses turn linear if they are averaged over several days. Consequently, we use linear mixed models as a framework for analysis, which allows the efficient detection of trends and the attribution of trends to changes in the environmental factors and CO~2~. We showed that in the Fluxnet dataset a considerable increase in photosynthetic production with time can be observed. Using statistical methods, we demonstrate that increased CO~2~ concentrations are responsible for this increase.  Submission 10.5.2021
+
+**Paper 2) :** The second article is entitled: "Vulnerability of recovery of ecosystem exchange to extreme climatic events". The data analysis for the paper is largely finished. In the paper, we use methods from time series analysis to detect changes in the photosynthetic capacity of forest ecosystems from eddy covariance data. We observed that the carbon balance of the ecosystems recovers rapidly, within two years, from severe droughts. Planned submission of the paper 9.2021.
+
+**Paper 3) :** My third article: "Effects of increases in the growing season length on the carbon balance of northern forests", will use data mining approaches to quantify the effect of warmer spring and warmer autumns on primary production of eddy covariance sites. We will apply models from Gea et al[@gea2010modeling]., which predict springtime and autumn photosynthetic production as a function of temperature history. We will also use MODIS data to detect changes in the NDVI of the vegetation during the end and start of the growing season. Analysis of yearly carbon balances based on paper 1 and paper 2 allows me to separate the effect of an increased length of the growing season from other effects. Planned submission of the paper is 5.2022.
+
+
+# Materials and methods 
+
+## Global carbon flux data
+
+```{r sites, fig.align = 'center', out.width = "85%",fig.cap = "Distribution of eddy covariance flux sites in this study"}
+knitr::include_graphics(here::here("ResearchProposal", "PictureOne.png"))
+```
+
+More than 400 site–year eddy covariance (EC) flux data and meteorological data, including net ecosystem exchange (NEE), gross primary productivity (GPP), shortwave radiation (SW), vapor pressure deficit (VPD), air temperature (Tair),soil water content (SWC) and atmosphric CO~2~ (CO~2~) were obtained from the FLUXNET2015 database (https://fluxnet.fluxdata.org/data/fluxnet2015-dataset/). We removed all short-term time series and restricted our analysis to sites with more than seven years of data. At least 75% daily C flux data were observed or gap-filled with high quality according to the quality flag. 40 sites fulfilled the quality criteria. All sites are located in North America and Europe (Figure \@ref(fig:sites)), including 2 evergreen broadleaf forests (EBF), 13 deciduous broadleaf forests (DBF), 6 mixed forests (MF) and 19 evergreen needle leaf forests (ENF).
+
+## MODIS products
+
+Satellite-derived leaf area index (LAI) and normalized difference vegetation index (NDVI) of each site were obtained from the MODIS products (MCD15A3H and MOD13Q1) by Google Earth Engine[@gorelick2017google] according to the coordinates. The temporal scale of MODIS LAI and NDVI were 4 days and 16 days, respectively. Daily LAI and NDVI were gap-filled by linear interpolation.
+
+## Extreme events
+
+The Standardised Precipitation-Evapotranspiration Index (SPEI) was calculated form climatic data which collected by EC flux tower, for determining the drought events. SPEI calculation was done using *'SPEI'* package[@Rspei] in R[@Rlanguage]. 
+
+## Statistical analysis
+
+Most of the analysis was done, for computational reasons on variables that were scaled to 0 mean and unit variance. Then, Collinearity among all variables was checked using variance inflation factors (VIFs). Following O’Brien et al[@o2007caution], a threshold VIFs value of 4 was set to filter the all variables. Next, Linear mixed models were applied to estimated the magnitude of CO~2~ fertilization and effects of extreme events on forest carbon fluxes. All statistical analyses were done using R[@Rlanguage] with significant level of 0.05.
+
+# Schedule and funding plans 
+
+I would estimate that I have finished about 2/3 of the requirements of my PhD. I started my PhD in April 2019. I have obtained 20 credits for graduate studies and the last 10 credits should be received at end of May 2021. My first paper is pending the approval of the last changes of the co-authors and will be submitted next week. Thus the future plan as follow:
+during spring 2021, I will be devoted to the second paper. During autumn 2021, and spring 2022 I will work on the third paper. During 2023 I will write the summary of my thesis and I hope to defend in May 2023 (Figure \@ref(fig:myplan)).
+
+```{r myplan, fig.align = 'center', out.width = "100%",fig.cap = "My future plan"}
+knitr::include_graphics(here::here("ResearchProposal", "myplan.png"))
+```
+
+I have applied the early stage research position in University of Eastern Finland. This position pays me salary monthly from 1.1.2021 to 31.12.2021. Now I am applying this position and hope to get the funding from 1.1.2022 to 31.5.2023.
+
+# Scientific significance
+
+My research sheds new light on the global terrestrial carbon sink using long term monitoring data. The first paper is one of the first papers that provides field evidence for a CO~2~ fertilization effect from eddy covariance time series.
+ 
+In my PhD, I apply methods, commonly used in econometric and experimental research to environmental monitoring data. These methods allow testing causal hypotheses in environmental data. They also allow a better quantification of statistical relationships and to establish recovery times of ecosystem processes from extreme events.   
+
+
+
+# References
+
